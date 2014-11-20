@@ -32,9 +32,9 @@ class CoreErrorHandlers {
 
 	/**
 	 * @param LoggerInterface $logger
-	 * @param LogLevel $logLevel
+	 * @param string $logLevel PSR-3 Log-Level
 	 */
-	public static function registerAssertionHandler(LoggerInterface $logger, LogLevel $logLevel) {
+	public static function registerAssertionHandler(LoggerInterface $logger, $logLevel) {
 		static $errorLogger = null;
 		if($errorLogger === null) {
 			$errorLogger = new LoggerCollection();
