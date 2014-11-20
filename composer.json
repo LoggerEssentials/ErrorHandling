@@ -1,0 +1,30 @@
+{
+	"name": "logger/errorhandling",
+	"description": "Errorhandling extension for PSR-3 compatible loggers",
+	"license": "MIT",
+	"authors": [{
+		"name": "ron",
+		"email": "ron.kirschler@gmail.com"
+	}],
+	"require": {
+		"php": ">= 5.3",
+		"logger/logger": "*",
+		"logger/essentials": "*"
+	},
+	"require-dev": {
+		"phpunit/phpunit": "~3.7"
+	},
+	"autoload": {
+		"psr-4": {
+			"Logger\\": "src/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"Logger\\": ["src/", "tests/"]
+		}
+	},
+	"suggest": {
+		"logger/essentials": "Advanced logging component library"
+	}
+}
