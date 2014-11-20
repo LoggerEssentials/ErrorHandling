@@ -32,15 +32,16 @@ class CoreErrorHandlers {
 
 	/**
 	 * @param LoggerInterface $logger
+	 * @param LogLevel $logLevel
 	 */
-	public static function registerAssertionHandler(LoggerInterface $logger) {
+	public static function registerAssertionHandler(LoggerInterface $logger, LogLevel $logLevel) {
 		static $errorLogger = null;
 		if($errorLogger === null) {
 			$errorLogger = new LoggerCollection();
 			assert_options(ASSERT_ACTIVE, true);
 			assert_options(ASSERT_WARNING, false);
-			assert_options(ASSERT_CALLBACK, function ($file, $line, $message) use ($errorLogger, $level) {
-				$errorLogger->log($level, $message, array(
+			assert_options(ASSERT_CALLBACK, function ($file, $line, $message) use ($errorLogger, $logLevel) {
+				$errorLogger->log($logLevel, $message, array(
 					'file' => $file,
 					'line' => $line
 				));
