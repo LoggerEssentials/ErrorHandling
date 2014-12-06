@@ -61,17 +61,7 @@ class CoreErrorHandlers {
 			register_shutdown_function(function () use ($errorLogger, $errorLevels) {
 				$errorLogger = new LogLevelRangeFilter($errorLogger, LogLevel::ERROR);
 				$error = error_get_last();
-				if ($error !== null) {
-					if(array_key_exists($error['type'], $errorLevels)) {
-						$errorLevel = $errorLevels[$error['type']];
-					} else {
-						$errorLevel = LogLevel::CRITICAL;
-					}
-					$errorLogger->log($errorLevel, $error['message'], array(
-						'file' => $error['file'],
-						'line' => $error['line']
-					));
-				}
+				$errorLogger->log($errorLevel, $error['message'], $error);
 			});
 		}
 		$errorLogger->add($logger);
