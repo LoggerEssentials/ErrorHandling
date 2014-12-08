@@ -26,6 +26,9 @@ class CoreErrorHandlers {
 	 */
 	public static function enableExceptionsForErrors() {
 		set_error_handler(function ($level, $message, $file, $line) {
+			if (0 === error_reporting()) {
+				return false;
+			}
 			throw new \ErrorException($message, 0, $level, $file, $line);
 		});
 	}
@@ -61,7 +64,7 @@ class CoreErrorHandlers {
 			register_shutdown_function(function () use ($errorLogger, $errorLevels) {
 				$errorLogger = new LogLevelRangeFilter($errorLogger, LogLevel::ERROR);
 				$error = error_get_last();
-				$errorLogger->log($errorLevel, $error['message'], $error);
+				$errorLogger->log(LogLevel::ALERT, $error['message'], $error);
 			});
 		}
 		$errorLogger->add($logger);
