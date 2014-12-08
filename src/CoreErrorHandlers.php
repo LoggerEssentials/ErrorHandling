@@ -81,13 +81,7 @@ class CoreErrorHandlers {
 			$errorLogger = new LoggerCollection();
 			set_exception_handler(function (\Exception $exception) use ($errorLogger) {
 				$errorLogger = new LogLevelRangeFilter($errorLogger, LogLevel::ERROR);
-				$errorLogger->log(LogLevel::CRITICAL, $exception->getMessage(), array(
-					'type' => get_class($exception),
-					'code' => $exception->getCode(),
-					'file' => $exception->getFile(),
-					'line' => $exception->getLine(),
-					'trace' => $exception->getTraceAsString(),
-				));
+				$errorLogger->log(LogLevel::CRITICAL, $exception->getMessage(), array('exception' => $exception));
 			});
 		}
 		$errorLogger->add($logger);
