@@ -1,6 +1,8 @@
 <?php
 namespace Logger;
 
+use ErrorException;
+use Exception;
 use Logger\Filters\LogLevelRangeFilter;
 use Logger\Loggers\LoggerCollection;
 use Psr\Log\LoggerInterface;
@@ -23,13 +25,16 @@ class CoreErrorHandlers {
 	);
 
 	/**
+	 * @param int|null $bitmask
 	 */
-	public static function enableExceptionsForErrors() {
-		set_error_handler(function ($level, $message, $file, $line) {
+	public static function enableExceptionsForErrors($bitmask = null) {
+		set_error_handler(function ($level, $message, $file, $line) use ($bitmask) {
 			if (0 === error_reporting()) {
 				return false;
 			}
-			throw new \ErrorException($message, 0, $level, $file, $line);
+			if($bitmask & $level) {
+				throw new ErrorException($message, 0, $level, $file, $line);
+			}
 		});
 	}
 
@@ -79,7 +84,7 @@ class CoreErrorHandlers {
 		static $errorLogger = null;
 		if($errorLogger === null) {
 			$errorLogger = new LoggerCollection();
-			set_exception_handler(function (\Exception $exception) use ($errorLogger) {
+			set_exception_handler(function (Exception $exception) use ($errorLogger) {
 				$errorLogger = new LogLevelRangeFilter($errorLogger, LogLevel::ERROR);
 				$errorLogger->log(LogLevel::CRITICAL, $exception->getMessage(), array(
 					'type' => get_class($exception),
