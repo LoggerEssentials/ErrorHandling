@@ -88,9 +88,7 @@ class CoreErrorHandlers {
 				$errorLogger = new LogLevelRangeFilter($errorLogger, LogLevel::ERROR);
 				$errorLogger->log(LogLevel::CRITICAL, $exception->getMessage(), array('exception' => $exception));
 				if($exception instanceof Exception) {
-					throw new Exception((string) $exception->getMessage(), (int) $exception->getCode(), $exception);
-				} else {
-					throw new Exception((string) $exception->getMessage(), (int) $exception->getCode());
+					throw $exception;
 				}
 			});
 		}
