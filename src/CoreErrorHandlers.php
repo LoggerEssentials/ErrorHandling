@@ -87,7 +87,11 @@ class CoreErrorHandlers {
 			set_exception_handler(function (Exception $exception) use ($errorLogger) {
 				$errorLogger = new LogLevelRangeFilter($errorLogger, LogLevel::ERROR);
 				$errorLogger->log(LogLevel::CRITICAL, $exception->getMessage(), array('exception' => $exception));
-				throw new \Exception($exception->getMessage(), $exception->getCode(), $exception);
+				if($exception instanceof Exception) {
+					throw new Exception((string) $exception->getMessage(), (int) $exception->getCode(), $exception);
+				} else {
+					throw new Exception((string) $exception->getMessage(), (int) $exception->getCode());
+				}
 			});
 		}
 		$errorLogger->add($logger);
