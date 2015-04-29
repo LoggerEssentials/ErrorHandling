@@ -21,7 +21,7 @@
 	},
 	"autoload-dev": {
 		"psr-4": {
-			"Logger\\": "tests/"
+			"Logger\\": ["src/", "tests/"]
 		}
 	},
 	"suggest": {
