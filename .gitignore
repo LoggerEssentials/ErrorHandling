@@ -1,6 +1,9 @@
 /*
 !/src
 !/tests
+!/.editorconfig
+!/.gitattributes
+!/.gitignore
 !/.travis.yml
 !/composer.json
 !/LICENSE
