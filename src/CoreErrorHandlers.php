@@ -29,6 +29,10 @@ class CoreErrorHandlers {
 	 */
 	public static function enableExceptionsForErrors($bitmask = null) {
 		set_error_handler(function ($level, $message, $file, $line) use ($bitmask) {
+			// PHP-7 fix: What once was an E_STRICT is now an E_WARNING:
+			if(preg_match('/^Declaration of .*? should be compatible with/', $message)) {
+				$level = E_STRICT;
+			}
 			if (0 === error_reporting()) {
 				return false;
 			}
