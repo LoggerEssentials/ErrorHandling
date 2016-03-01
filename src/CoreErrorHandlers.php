@@ -92,7 +92,7 @@ class CoreErrorHandlers {
 				/** @var \Exception|\Throwable $exception */
 				$errorLogger = new LogLevelRangeFilter($errorLogger, LogLevel::ERROR);
 				$errorLogger->log(LogLevel::CRITICAL, $exception->getMessage(), array('exception' => $exception));
-				if($exception instanceof Exception) {
+				if($exception instanceof Exception || $exception instanceof \Error) {
 					throw $exception;
 				}
 			});
