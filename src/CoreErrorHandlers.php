@@ -112,7 +112,7 @@ class CoreErrorHandlers {
 			fclose($fp);
 		};
 
-		$p("%s%s\n", $messageIntro, $e->getMessage());
+		$p("%s[%s] %s\n", $messageIntro, get_class($e), $e->getMessage());
 
 		$formatStation = function ($idx, $station) use ($p) {
 			$defaults = [
