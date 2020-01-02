@@ -18,6 +18,8 @@ Errorhandling extension for PSR-3 compatible loggers
 Typically you would end up having something like this:
 
 ```PHP
+use Logger\CoreErrorHandlers;
+// ...
 CoreErrorHandlers::enableExceptionsForErrors();
 CoreErrorHandlers::registerAssertionHandler($logger, LogLevel::DEBUG);
 CoreErrorHandlers::registerExceptionHandler($logger);
