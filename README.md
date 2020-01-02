@@ -9,11 +9,11 @@ Errorhandling extension for PSR-3 compatible loggers
 
 ## Why should I care?
 
-`ErrorHandling` helps you getting every type of problem in your logging-channels.
+`CoreErrorHandlers` helps you getting every type of problem in your logging-channels.
 
 ## How does it work?
 
-`ErrorHandling` uses most of PHP's capabilities to capture _notices_, _warnings_, _errors_, _exceptions_ and even _fatal errors_ in most situations and redirect them to user-defined PSR-3 compatible logging channels. 
+`CoreErrorHandlers` uses most of PHP's capabilities to capture _notices_, _warnings_, _errors_, _exceptions_ and even _fatal errors_ in most situations and redirect them to user-defined PSR-3 compatible logging channels. 
 
 Typically you would end up having something like this:
 
