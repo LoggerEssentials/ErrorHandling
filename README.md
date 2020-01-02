@@ -18,11 +18,10 @@ Errorhandling extension for PSR-3 compatible loggers
 Typically you would end up having something like this:
 
 ```PHP
-$coreHandlers = new CoreErrorHandlers();
-$coreHandlers->enableExceptionsForErrors();
-$coreHandlers->registerAssertionHandler($logger, LogLevel::DEBUG);
-$coreHandlers->registerExceptionHandler($logger);
-$coreHandlers->registerFatalErrorHandler($logger);
+CoreErrorHandlers::enableExceptionsForErrors();
+CoreErrorHandlers::registerAssertionHandler($logger, LogLevel::DEBUG);
+CoreErrorHandlers::registerExceptionHandler($logger);
+CoreErrorHandlers::registerFatalErrorHandler($logger);
 ```
 
 This will register trigger-callback-functions for asserts, exceptions and fatal errors. It also registers exception-handlers for every notice, warning and error.
