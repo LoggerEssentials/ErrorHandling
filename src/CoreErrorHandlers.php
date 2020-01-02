@@ -72,7 +72,7 @@ class CoreErrorHandlers {
 			$errorLevels = self::$phpErrorLevels;
 			register_shutdown_function(function () use ($errorLogger, $errorLevels) {
 				$error = error_get_last();
-				if($error['type'] === E_ERROR) {
+				if($error !== null && $error['type'] === E_ERROR) {
 					$errorLogger = new LogLevelRangeFilter($errorLogger, LogLevel::ERROR);
 					$errorLogger->log(LogLevel::ALERT, $error['message'], $error);
 				}
