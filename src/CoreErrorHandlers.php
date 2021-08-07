@@ -7,6 +7,8 @@ use Logger\Filters\LogLevelRangeFilter;
 use Logger\Loggers\LoggerCollection;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
+use Error;
+use Throwable;
 
 class CoreErrorHandlers {
 	/**
@@ -53,10 +55,10 @@ class CoreErrorHandlers {
 			assert_options(ASSERT_ACTIVE, true);
 			assert_options(ASSERT_WARNING, false);
 			assert_options(ASSERT_CALLBACK, function ($file, $line, $message) use ($errorLogger, $logLevel) {
-				$errorLogger->log($logLevel, $message, array(
+				$errorLogger->log($logLevel, $message, [
 					'file' => $file,
 					'line' => $line
-				));
+				]);
 			});
 		}
 		$errorLogger->add($logger);
@@ -81,23 +83,44 @@ class CoreErrorHandlers {
 		$errorLogger->add($logger);
 	}
 
-	/**
-	 * @param LoggerInterface $logger
-	 */
 	public static function registerExceptionHandler(LoggerInterface $logger) {
 		static $errorLogger = null;
 		if($errorLogger === null) {
 			$errorLogger = new LoggerCollection();
-			set_exception_handler(function ($exception) use ($errorLogger) {
-				/** @var \Exception|\Throwable $exception */
+			set_exception_handler(static function ($exception) use ($errorLogger) {
+				/** @var Exception|Throwable $exception */
 				$errorLogger = new LogLevelRangeFilter($errorLogger, LogLevel::ERROR);
-				$errorLogger->log(LogLevel::CRITICAL, $exception->getMessage(), array('exception' => $exception));
-				if($exception instanceof Exception) {
+				try {
+					$errorLogger->log(LogLevel::CRITICAL, $exception->getMessage(), ['exception' => self::getExceptionAsArray($exception, true, true)]);
+				} catch (Throwable $e) {
+					$errorLogger->log(LogLevel::CRITICAL, $exception->getMessage(), ['exception' => self::getExceptionAsArray($exception, false, false)]);
+				}
+				if($exception instanceof Throwable && !($exception instanceof Error)) {
 					StackTracePrinter::printException($exception, "PHP Fatal Error: Uncaught exception: ");
 					die(1);
 				}
 			});
 		}
 		$errorLogger->add($logger);
+	}
+
+	/**
+	 * @param Throwable $exception
+	 * @param bool $previous
+	 * @param bool $withTrace
+	 * @return array|null
+	 */
+	private static function getExceptionAsArray($exception, bool $previous, bool $withTrace) {
+		if($exception === null) {
+			return null;
+		}
+		return [
+			'message' => $exception->getMessage(),
+			'code' => $exception->getCode(),
+			'file' => $exception->getFile(),
+			'line' => $exception->getLine(),
+			'trace' => $withTrace ? $exception->getTrace() : $exception->getTraceAsString(),
+			'previous' => $previous ? self::getExceptionAsArray($exception->getPrevious(), $previous, $withTrace) : null,
+		];
 	}
 }
