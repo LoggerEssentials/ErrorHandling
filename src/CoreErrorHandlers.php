@@ -20,6 +20,8 @@ use Throwable;
  * }
  */
 class CoreErrorHandlers {
+	private const FATAL_LEVELS = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+
 	private static ?LoggerCollection $assertionLogger = null;
 	private static ?LoggerCollection $fatalLogger = null;
 	private static ?LoggerCollection $exceptionLogger = null;
@@ -49,8 +51,8 @@ class CoreErrorHandlers {
 			self::$assertionLogger = new LoggerCollection();
 			assert_options(ASSERT_ACTIVE, true);
 			assert_options(ASSERT_WARNING, false);
-			assert_options(ASSERT_CALLBACK, static function (string $file, int $line, ?string $message) use ($logLevel): void {
-				self::$assertionLogger?->log($logLevel, (string) $message, [
+			assert_options(ASSERT_CALLBACK, static function (string $file, int $line, ?string $code, ?string $description = null) use ($logLevel): void {
+				self::$assertionLogger?->log($logLevel, (string) $description, [
 					'file' => $file,
 					'line' => $line,
 				]);
@@ -65,10 +67,9 @@ class CoreErrorHandlers {
 	public static function registerFatalErrorHandler(LoggerInterface $logger): void {
 		if(self::$fatalLogger === null) {
 			self::$fatalLogger = new LoggerCollection();
-			$fatalLevels = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR];
-			register_shutdown_function(function () use ($fatalLevels): void {
+			register_shutdown_function(function (): void {
 				$error = error_get_last();
-				if($error !== null && in_array($error['type'], $fatalLevels, true)) {
+				if($error !== null && in_array($error['type'], self::FATAL_LEVELS, true)) {
 					$fl = new LogLevelRangeFilter(self::$fatalLogger ?? new LoggerCollection(), LogLevel::ERROR);
 					$fl->log(LogLevel::ALERT, $error['message'], $error);
 				}
