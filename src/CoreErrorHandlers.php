@@ -9,11 +9,25 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Throwable;
 
+/**
+ * @phpstan-type TExceptionArray array{
+ *     message: string,
+ *     code: int|string,
+ *     file: string,
+ *     line: int,
+ *     trace: mixed[]|string,
+ *     previous: array<string, mixed>|null
+ * }
+ */
 class CoreErrorHandlers {
+	private static ?LoggerCollection $assertionLogger = null;
+	private static ?LoggerCollection $fatalLogger = null;
+	private static ?LoggerCollection $exceptionLogger = null;
+
 	/**
 	 * @param int $bitmask
 	 */
-	public static function enableExceptionsForErrors(int $bitmask = E_ALL) {
+	public static function enableExceptionsForErrors(int $bitmask = E_ALL): void {
 		set_error_handler(function ($level, $message, $file, $line) use ($bitmask) {
 			if(0 === error_reporting()) {
 				return false;
@@ -30,69 +44,66 @@ class CoreErrorHandlers {
 	 * @param LoggerInterface $logger
 	 * @param string $logLevel PSR-3 Log-Level
 	 */
-	public static function registerAssertionHandler(LoggerInterface $logger, $logLevel) {
-		static $errorLogger = null;
-		if($errorLogger === null) {
-			$errorLogger = new LoggerCollection();
+	public static function registerAssertionHandler(LoggerInterface $logger, string $logLevel): void {
+		if(self::$assertionLogger === null) {
+			self::$assertionLogger = new LoggerCollection();
 			assert_options(ASSERT_ACTIVE, true);
 			assert_options(ASSERT_WARNING, false);
-			assert_options(ASSERT_CALLBACK, static fn(string $file, int $line, ?string $message) =>
-				$errorLogger->log($logLevel, $message, [
+			assert_options(ASSERT_CALLBACK, static function (string $file, int $line, ?string $message) use ($logLevel): void {
+				self::$assertionLogger?->log($logLevel, (string) $message, [
 					'file' => $file,
 					'line' => $line,
-				])
-			);
+				]);
+			});
 		}
-		$errorLogger->add($logger);
+		self::$assertionLogger->add($logger);
 	}
 
 	/**
 	 * @param LoggerInterface $logger
 	 */
-	public static function registerFatalErrorHandler(LoggerInterface $logger) {
-		static $errorLogger = null;
-		if($errorLogger === null) {
-			$errorLogger = new LoggerCollection();
+	public static function registerFatalErrorHandler(LoggerInterface $logger): void {
+		if(self::$fatalLogger === null) {
+			self::$fatalLogger = new LoggerCollection();
 			$fatalLevels = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR];
-			register_shutdown_function(function () use ($errorLogger, $fatalLevels) {
+			register_shutdown_function(function () use ($fatalLevels): void {
 				$error = error_get_last();
 				if($error !== null && in_array($error['type'], $fatalLevels, true)) {
-					$errorLogger = new LogLevelRangeFilter($errorLogger, LogLevel::ERROR);
-					$errorLogger->log(LogLevel::ALERT, $error['message'], $error);
+					$fl = new LogLevelRangeFilter(self::$fatalLogger ?? new LoggerCollection(), LogLevel::ERROR);
+					$fl->log(LogLevel::ALERT, $error['message'], $error);
 				}
 			});
 		}
-		$errorLogger->add($logger);
+		self::$fatalLogger->add($logger);
 	}
 
-	public static function registerExceptionHandler(LoggerInterface $logger) {
-		static $errorLogger = null;
-		if($errorLogger === null) {
-			$errorLogger = new LoggerCollection();
-			set_exception_handler(static function ($exception) use ($errorLogger) {
-				/** @var Throwable $exception */
-				$errorLogger = new LogLevelRangeFilter($errorLogger, LogLevel::ERROR);
+	public static function registerExceptionHandler(LoggerInterface $logger): void {
+		if(self::$exceptionLogger === null) {
+			self::$exceptionLogger = new LoggerCollection();
+			set_exception_handler(static function (Throwable $exception): void {
+				$log = new LogLevelRangeFilter(self::$exceptionLogger ?? new LoggerCollection(), LogLevel::ERROR);
 				try {
 					$exceptionAsArray = self::getExceptionAsArray($exception, true, true);
-					$errorLogger->log(LogLevel::CRITICAL, $exception->getMessage(), ['exception' => $exceptionAsArray]);
+					$log->log(LogLevel::CRITICAL, $exception->getMessage(), ['exception' => $exceptionAsArray]);
 				} catch(Throwable) {
 					$exceptionAsArray1 = self::getExceptionAsArray($exception, false, false);
-					$errorLogger->log(LogLevel::CRITICAL, $exception->getMessage(), ['exception' => $exceptionAsArray1]);
+					$log->log(LogLevel::CRITICAL, $exception->getMessage(), ['exception' => $exceptionAsArray1]);
 				}
 				StackTracePrinter::printException($exception, "PHP Fatal Error: Uncaught: ");
 				die(1);
 			});
 		}
-		$errorLogger->add($logger);
+		self::$exceptionLogger->add($logger);
 	}
 
 	/**
-	 * @param Throwable $exception
+	 * @param Throwable|null $exception
 	 * @param bool $previous
 	 * @param bool $withTrace
-	 * @return array|null
+	 * @return array<string, mixed>|null
+	 * @phpstan-return TExceptionArray|null
 	 */
-	private static function getExceptionAsArray($exception, bool $previous, bool $withTrace) {
+	private static function getExceptionAsArray(?Throwable $exception, bool $previous, bool $withTrace) {
 		if($exception === null) {
 			return null;
 		}
