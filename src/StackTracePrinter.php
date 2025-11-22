@@ -1,21 +1,22 @@
 <?php
+
 namespace Logger;
 
-use Exception;
+use Throwable;
 
 class StackTracePrinter {
 	/**
-	 * @param Exception $e
+	 * @param Throwable $e
 	 * @param string $messageIntro
 	 */
-	public static function printException(Exception $e, $messageIntro = '') {
+	public static function printException(Throwable $e, $messageIntro = '') {
 		self::p("%s[%s] %s\n", $messageIntro, get_class($e), $e->getMessage());
 
 		foreach($e->getTrace() as $idx => $station) {
 			self::formatStation($idx, $station);
 		}
 
-		if($e->getPrevious() instanceof Exception) {
+		if($e->getPrevious() instanceof Throwable) {
 			self::p();
 			self::printException($e->getPrevious(), 'Previous: ');
 		}
@@ -26,19 +27,19 @@ class StackTracePrinter {
 	 * @param array $station
 	 */
 	private static function formatStation($idx, $station) {
-		$defaults = array(
+		$defaults = [
 			'file' => null,
 			'line' => null,
 			'class' => null,
 			'function' => null,
 			'type' => null,
-			'args' => array(),
-		);
+			'args' => [],
+		];
 		$station = array_merge($defaults, $station);
 		self::p("#%- 3s%s:%d\n", $idx, $station['file'] ?: 'unknown', $station['line']);
 		if($station['class'] !== null || $station['function'] !== null) {
-			$params = array();
-			foreach(is_array($station['args']) ? $station['args'] : array() as $argument) {
+			$params = [];
+			foreach(is_array($station['args']) ? $station['args'] : [] as $argument) {
 				if(is_array($argument)) {
 					$params[] = sprintf('array%d', count($argument));
 				} elseif(is_object($argument)) {
