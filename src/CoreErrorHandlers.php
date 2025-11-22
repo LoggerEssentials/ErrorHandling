@@ -104,7 +104,7 @@ class CoreErrorHandlers {
 	 * @return array<string, mixed>|null
 	 * @phpstan-return TExceptionArray|null
 	 */
-	private static function getExceptionAsArray(?Throwable $exception, bool $previous, bool $withTrace) {
+	private static function getExceptionAsArray(?Throwable $exception, bool $previous, bool $withTrace): ?array {
 		if($exception === null) {
 			return null;
 		}
