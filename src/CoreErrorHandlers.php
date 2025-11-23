@@ -49,13 +49,29 @@ class CoreErrorHandlers {
 	public static function registerAssertionHandler(LoggerInterface $logger, string $logLevel): void {
 		if(self::$assertionLogger === null) {
 			self::$assertionLogger = new LoggerCollection();
-			assert_options(ASSERT_ACTIVE, true);
-			assert_options(ASSERT_WARNING, false);
-			assert_options(ASSERT_CALLBACK, static function (string $file, int $line, ?string $code, ?string $description = null) use ($logLevel): void {
-				self::$assertionLogger?->log($logLevel, (string) $description, [
-					'file' => $file,
-					'line' => $line,
-				]);
+
+			// PHP 8.0+ throws AssertionError by default (assert.exception=1)
+			// We register an exception handler specifically for assertions
+			$previousHandler = set_exception_handler(null);
+			restore_exception_handler();
+
+			set_exception_handler(static function (Throwable $exception) use ($previousHandler, $logLevel): void {
+				if($exception instanceof \AssertionError) {
+					// Log the assertion failure
+					self::$assertionLogger?->log($logLevel, $exception->getMessage(), [
+						'file' => $exception->getFile(),
+						'line' => $exception->getLine(),
+					]);
+					// Don't re-throw - assertion has been handled
+					return;
+				}
+
+				// Pass other exceptions to previous handler or re-throw
+				if($previousHandler !== null) {
+					$previousHandler($exception);
+				} else {
+					throw $exception;
+				}
 			});
 		}
 		self::$assertionLogger->add($logger);

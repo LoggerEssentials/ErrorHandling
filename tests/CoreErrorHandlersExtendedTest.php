@@ -30,22 +30,48 @@ class CoreErrorHandlersExtendedTest extends TestCase {
 	}
 
 	public function testRegisterAssertionHandler_LogsWithContext(): void {
-		// Prevent AssertionError exceptions so our callback is used
-		@assert_options(ASSERT_EXCEPTION, 0);
-		$logger = ArrayLogger::wrap();
-		CoreErrorHandlers::registerAssertionHandler($logger, LogLevel::ERROR);
+		$tmpDir = sys_get_temp_dir();
+		$logFile = tempnam($tmpDir, 'exh-log-');
+		if($logFile === false) {
+			throw new RuntimeException('Could not create temp file');
+		}
 
-		// Intentionally failing assertion (deterministic false, not statically known)
-		$cond = getenv('__ASSERT_FAIL__') === '1';
-		assert($cond, 'assertion failed');
+		$root = dirname(__DIR__);
+		$script = <<<PHP
+        <?php
+        require {$this->exportPath("$root/vendor/autoload.php")};
+        use Logger\\CoreErrorHandlers;
+        use Logger\\Loggers\\ArrayLogger;
+        use Psr\\Log\\LogLevel;
 
-		$messages = $logger->getMessages();
-		$this->assertNotEmpty($messages);
+        \$arrayLogger = ArrayLogger::wrap();
+        CoreErrorHandlers::registerAssertionHandler(\$arrayLogger, LogLevel::ERROR);
+
+        // Register shutdown function to save logs even if script ends early
+        register_shutdown_function(function () use (\$arrayLogger) {
+            file_put_contents({$this->exportPath($logFile)}, json_encode(\$arrayLogger->getMessages()));
+        });
+
+        // Intentionally failing assertion (deterministic false, not statically known)
+        \$cond = getenv('__ASSERT_FAIL__') === '1';
+        assert(\$cond, 'assertion failed');
+        PHP;
+
+		$this->runPhpScript($script);
+
+		$json = file_get_contents($logFile);
+		$this->assertNotFalse($json);
+		$messages = json_decode($json, true);
+		if(!is_array($messages)) {
+			$this->fail('Invalid log JSON');
+		}
+
+		$this->assertNotEmpty($messages, 'Assertion should have been logged');
 		$last = end($messages);
 		if($last === false) {
 			$this->fail('No log entry found');
 		}
-		// Assert something meaningful but not trivially always true
+
 		$this->assertArrayHasKey('level', $last);
 		$this->assertArrayHasKey('message', $last);
 		$this->assertArrayHasKey('file', $last['context']);
